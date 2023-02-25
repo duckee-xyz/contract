@@ -1,6 +1,6 @@
 root = true
 
-[*]
+[*.{!key}]
 charset = utf-8
 insert_final_newline = true
 trim_trailing_whitespace = true
@@ -9,6 +9,6 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-[*,{cdc}]
+[*.{cdc}]
 indent_style = space
 indent_size = 4

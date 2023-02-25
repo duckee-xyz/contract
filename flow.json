@@ -3,6 +3,13 @@
     "DuckeeArtNFT": "./contracts/DuckeeArtNFT.cdc",
     "DuckeePromptSBT": "./contracts/DuckeePromptSBT.cdc",
     "DuckToken": "./contracts/DuckToken.cdc",
+    "ChildAccount": {
+      "source": "./contracts/utility/ChildAccount.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0x1b655847a90e644a"
+      }
+    },
     "FlowToken": {
       "source": "./contracts/utility/FlowToken.cdc",
       "aliases": {
@@ -65,7 +72,9 @@
   "deployments": {
     "testnet": {
       "testnet-account": [
-        "DuckeeArt"
+        "DuckeeArtNFT",
+        "DuckToken",
+        "DuckeePromptSBT"
       ]
     }
   }
