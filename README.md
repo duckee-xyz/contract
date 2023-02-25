@@ -1,4 +1,5 @@
 # Duckee Contract
+
 🧱 AI NFT &amp; Marketplace Contracts of Duckee.
 
 ## Getting Started
@@ -17,9 +18,17 @@ you can deploy it with preconfigured key.
 
 ### Testnet
 
-You need to set up your p
+You need to set up your private key in `testnet-account.key` and edit the account in `flow.json`.
 
 ```
- $ flow emulator &
- $ flow project deploy -n=emulator
+ $ flow generate keys
+ $ flow project deploy -n=testnet
+```
+
+## Setting Up
+
+### 1. Set up ChildAccountCreator
+
+```
+ $ flow transactions send -n=testnet --authorizer testnet-account --proposer testnet-account --payer testnet-account ./transactions/setup-child-account-creator.cdc
 ```
