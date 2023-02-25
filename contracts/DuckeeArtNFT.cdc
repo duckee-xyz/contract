@@ -11,6 +11,7 @@ pub contract DuckeeArtNFT: NonFungibleToken {
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
+    pub let ProviderPrivatePath: PrivatePath
 
     pub struct DuckeeArtNFTMintData {
         pub let id: UInt64
@@ -91,7 +92,7 @@ pub contract DuckeeArtNFT: NonFungibleToken {
                     return MetadataViews.NFTCollectionData(
                         storagePath: DuckeeArtNFT.CollectionStoragePath,
                         publicPath: DuckeeArtNFT.CollectionPublicPath,
-                        providerPath: /private/DuckeeNFTCollectionProvider,
+                        providerPath: DuckeeArtNFT.ProviderPrivatePath,
                         publicCollection: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic}>(),
                         publicLinkedType: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic, NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, MetadataViews.ResolverCollection}>(),
                         providerLinkedType: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic, NonFungibleToken.CollectionPublic, NonFungibleToken.Provider, MetadataViews.ResolverCollection}>(),
@@ -235,6 +236,7 @@ pub contract DuckeeArtNFT: NonFungibleToken {
         self.CollectionStoragePath = /storage/DuckeeArtNFTCollection
         self.CollectionPublicPath = /public/DuckeeArtNFTCollection
         self.MinterStoragePath = /storage/DuckeeArtNFTMinter
+        self.ProviderPrivatePath = /private/DuckeeNFTCollectionProvider
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()

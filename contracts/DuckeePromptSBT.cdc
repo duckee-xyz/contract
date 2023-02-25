@@ -8,14 +8,15 @@ import MetadataViews from "./utility/MetadataViews.cdc"
 /// Purchasable
 pub contract DuckeePromptSBT: NonFungibleToken {
     pub var totalSupply: UInt64
+    pub var supplyPerArtNFT: {UInt64: UInt64}
 
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
+    pub event PromptMinted(id: UInt64, artTokenID: UInt64, recipient: Address);
 
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
-    pub let MinterStoragePath: StoragePath
 
     pub struct DuckeePromptSBTMintData {
         pub let id: UInt64
@@ -117,7 +118,7 @@ pub contract DuckeePromptSBT: NonFungibleToken {
         pub fun borrowViewResolver(id: UInt64): &AnyResource{MetadataViews.Resolver} {
             let nft = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
             let DuckeePromptSBTNFT = nft as! &DuckeePromptSBT.NFT
-            return DuckeePromptSBTNFT as &AnyResource{MetadataViews.Resolver}
+            return DuckeePromptSBTNFT
         }
 
         destroy() {
@@ -130,27 +131,32 @@ pub contract DuckeePromptSBT: NonFungibleToken {
         return <- create Collection()
     }
 
-    pub resource Minter {
-        pub fun mintPromptSBT(
-            recipient: &{NonFungibleToken.CollectionPublic},
-            artTokenID: UInt64,
-        ) {
-            // create a new NFT
-            var newNFT <- create NFT(
-                id: DuckeePromptSBT.totalSupply,
-                artTokenID: artTokenID,
-            )
-            recipient.deposit(token: <-newNFT)
-            DuckeePromptSBT.totalSupply = DuckeePromptSBT.totalSupply + UInt64(1)
+    pub fun mintPromptSBT(
+        artTokenOwner: &{DuckeeArtNFT.DuckeeArtNFTCollectionPublic},
+        artTokenID: UInt64,
+        promptRecipient: &{NonFungibleToken.Receiver},
+    ) {
+        pre {
+            artTokenOwner.borrowDuckeeArtNFT(id: artTokenID) != nil: "only Art NFT owner can mint the prompt SBT"
         }
+        // create a new Prompt SBT
+        var newNFT <- create NFT(
+            id: DuckeePromptSBT.totalSupply,
+            artTokenID: artTokenID,
+        )
+        emit PromptMinted(id: newNFT.id, artTokenID: newNFT.artTokenID, recipient: promptRecipient.owner!.address)
+        promptRecipient.deposit(token: <-newNFT)
+
+        DuckeePromptSBT.totalSupply = DuckeePromptSBT.totalSupply + 1
+        DuckeePromptSBT.supplyPerArtNFT[artTokenID] = (DuckeePromptSBT.supplyPerArtNFT[artTokenID] ?? 0) + 1
     }
 
     init() {
         self.totalSupply = 0
+        self.supplyPerArtNFT = {}
 
         self.CollectionStoragePath = /storage/DuckeePromptSBTCollection
         self.CollectionPublicPath = /public/DuckeePromptSBTCollection
-        self.MinterStoragePath = /storage/DuckeePromptSBTMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
@@ -160,8 +166,6 @@ pub contract DuckeePromptSBT: NonFungibleToken {
             self.CollectionPublicPath,
             target: self.CollectionStoragePath
         )
-
-        self.account.save(<-create Minter(), to: self.MinterStoragePath)
 
         emit ContractInitialized()
     }

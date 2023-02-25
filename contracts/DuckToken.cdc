@@ -15,6 +15,7 @@ pub contract DuckToken: FungibleToken {
     pub let VaultPublicPath: PublicPath
     pub let ReceiverPublicPath: PublicPath
     pub let AdminStoragePath: StoragePath
+    pub let ProviderPrivatePath: PrivatePath
 
     /// The event that is emitted when the contract is created
     pub event TokensInitialized(initialSupply: UFix64)
@@ -141,7 +142,7 @@ pub contract DuckToken: FungibleToken {
                         storagePath: DuckToken.VaultStoragePath,
                         receiverPath: DuckToken.ReceiverPublicPath,
                         metadataPath: DuckToken.VaultPublicPath,
-                        providerPath: /private/DuckTokenVault,
+                        providerPath: DuckToken.ProviderPrivatePath,
                         receiverLinkedType: Type<&DuckToken.Vault{FungibleToken.Receiver}>(),
                         metadataLinkedType: Type<&DuckToken.Vault{FungibleToken.Balance, MetadataViews.Resolver}>(),
                         providerLinkedType: Type<&DuckToken.Vault{FungibleToken.Provider}>(),
@@ -241,6 +242,7 @@ pub contract DuckToken: FungibleToken {
         self.VaultPublicPath = /public/DuckTokenMetadata
         self.ReceiverPublicPath = /public/DuckTokenReceiver
         self.AdminStoragePath = /storage/DuckTokenAdmin
+        self.ProviderPrivatePath = /private/DuckTokenVault
 
         // Create the Vault with the total supply of tokens and save it in storage.
         let vault <- create Vault(balance: self.totalSupply)
