@@ -1,5 +1,5 @@
-import NonFungibleToken from 0x631e88ae7f1d7c20
-import MetadataViews from 0x631e88ae7f1d7c20
+import NonFungibleToken from "./utility/NonFungibleToken.cdc"
+import MetadataViews from "./utility/MetadataViews.cdc"
 
 pub contract DuckeeArt: NonFungibleToken {
     pub var totalSupply: UInt64
