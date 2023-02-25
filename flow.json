@@ -1,0 +1,31 @@
+{
+  "contracts": {
+    "DuckeeArt": "./contracts/DuckeeArt.cdc"
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000",
+    "sandboxnet": "access.sandboxnet.nodes.onflow.org:9000",
+    "testnet": "access.devnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "testnet-account": {
+      "address": "0x8b23832d9e84a767",
+      "key": {
+        "type": "file",
+        "location": "./testnet-account.key"
+      }
+    },
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "e60bc0c9e0e0a9e50a0865eb47ecf493a49e83dd222e78a9fc0f88d6bdbd6c68"
+    }
+  },
+  "deployments": {
+    "testnet": {
+      "testnet-account": [
+        "DuckeeArt"
+      ]
+    }
+  }
+}
