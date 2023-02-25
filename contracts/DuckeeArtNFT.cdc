@@ -1,7 +1,7 @@
 import NonFungibleToken from "./utility/NonFungibleToken.cdc"
 import MetadataViews from "./utility/MetadataViews.cdc"
 
-pub contract DuckeeArt: NonFungibleToken {
+pub contract DuckeeArtNFT: NonFungibleToken {
     pub var totalSupply: UInt64
 
     pub event ContractInitialized()
@@ -12,59 +12,134 @@ pub contract DuckeeArt: NonFungibleToken {
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
 
-    pub struct DuckeeArtMintData {
+    pub struct DuckeeArtNFTMintData {
         pub let id: UInt64
-        pub let type: String
-        pub let url: String
+        pub let description: String
+        pub let thumbnail: String
+        pub let parentTokenID: UInt64?
 
-        init(id: UInt64, type: String, url: String) {
+        init(id: UInt64, description: String, thumbnail: String, parentTokenID: UInt64?) {
             self.id = id
-            self.type = type
-            self.url = url
+            self.description = description
+            self.thumbnail = thumbnail
+            self.parentTokenID = parentTokenID
         }
     }
 
     pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         pub let id: UInt64
-        pub let type: String
-        pub let url: String
+        pub let description: String
+        pub let thumbnail: String
+        pub let parentTokenID: UInt64?
 
-        init(id: UInt64, type: String, url: String) {
+        init(id: UInt64, description: String, thumbnail: String, parentTokenID: UInt64?) {
             self.id = id
-            self.type = type
-            self.url = url
+            self.description = description
+            self.thumbnail = thumbnail
+            self.parentTokenID = parentTokenID
         }
 
         pub fun getViews(): [Type] {
-            return [ Type<DuckeeArtMintData>() ];
+            let views: [Type] = [
+                    Type<DuckeeArtNFTMintData>(),
+                    Type<MetadataViews.Display>(),
+                    Type<MetadataViews.Serial>(),
+                    Type<MetadataViews.ExternalURL>(),
+                    Type<MetadataViews.NFTCollectionData>(),
+                    Type<MetadataViews.NFTCollectionDisplay>(),
+                    Type<MetadataViews.Traits>()
+                ]
+            return views
         }
 
+        pub fun name(): String {
+            return "Duckee Art"
+                .concat(" #")
+                .concat(self.id.toString())
+        }
+        
+        /// Function that resolve the given GameMetadataView
+        ///
+        /// @param view: The Type of GameMetadataView to resolve
+        ///
+        /// @return The resolved GameMetadataView for this NFT with this NFT's
+        /// metadata or nil if none exists
+        ///
         pub fun resolveView(_ view: Type): AnyStruct? {
             switch view {
-                case Type<DuckeeArtMintData>():
-                return DuckeeArtMintData(
-                    id: self.id,
-                    type: self.type,
-                    url: self.url
-                )
+                case Type<DuckeeArtNFTMintData>():
+                    return DuckeeArtNFTMintData(
+                        id: self.id,
+                        description: self.description,
+                        thumbnail: self.thumbnail,
+                        parentTokenID: self.parentTokenID,
+                    )
+        
+                case Type<MetadataViews.Display>():
+                    return MetadataViews.Display(
+                        name: self.name(),
+                        description: self.description,
+                        thumbnail: MetadataViews.HTTPFile(url: self.thumbnail),
+                    )
+                case Type<MetadataViews.Serial>():
+                    return MetadataViews.Serial(
+                        self.id
+                    )
+                case Type<MetadataViews.ExternalURL>():
+                    return MetadataViews.ExternalURL("https://api.duckee.xyz/art/v1/".concat(self.id.toString()))
+                case Type<MetadataViews.NFTCollectionData>():
+                    return MetadataViews.NFTCollectionData(
+                        storagePath: DuckeeArtNFT.CollectionStoragePath,
+                        publicPath: DuckeeArtNFT.CollectionPublicPath,
+                        providerPath: /private/DuckeeNFTCollectionProvider,
+                        publicCollection: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic}>(),
+                        publicLinkedType: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic, NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, MetadataViews.ResolverCollection}>(),
+                        providerLinkedType: Type<&DuckeeArtNFT.Collection{DuckeeArtNFT.DuckeeArtNFTCollectionPublic, NonFungibleToken.CollectionPublic, NonFungibleToken.Provider, MetadataViews.ResolverCollection}>(),
+                        createEmptyCollectionFunction: (fun (): @NonFungibleToken.Collection {
+                            return <-DuckeeArtNFT.createEmptyCollection()
+                        })
+                    )
+                case Type<MetadataViews.NFTCollectionDisplay>():
+                    let media = MetadataViews.Media(
+                        file: MetadataViews.HTTPFile(url: self.thumbnail),
+                        mediaType: "image/png"
+                    )
+
+                    let bannerMedia = MetadataViews.Media(
+                        file: MetadataViews.HTTPFile(url: self.thumbnail),
+                        mediaType: "image/png"
+                    )
+                    return MetadataViews.NFTCollectionDisplay(
+                        name: "Duckee Art Collection",
+                        description: "The collection of tokenized arts created from generative AI models, from Duckee.",
+                        externalURL: MetadataViews.ExternalURL("https://duckee.xyz/"),
+                        squareImage: media,
+                        bannerImage: bannerMedia,
+                        socials: {}
+                    )
+                case Type<MetadataViews.Traits>():
+                    let traitsView = MetadataViews.dictToTraits(dict: {}, excludedNames: [])
+
+                    return traitsView
+                default:
+                    return nil
             }
-            return nil
         }
     }
 
-    pub resource interface DuckeeArtCollectionPublic {
+    pub resource interface DuckeeArtNFTCollectionPublic {
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
-        pub fun borrowDuckeeArt(id: UInt64): &DuckeeArt.NFT? {
+        pub fun borrowDuckeeArtNFT(id: UInt64): &DuckeeArtNFT.NFT? {
             post {
                 (result == nil) || (result?.id == id):
-                    "Cannot borrow DuckeeArt reference: the ID of the returned reference is incorrect"
+                    "Cannot borrow DuckeeArtNFT reference: the ID of the returned reference is incorrect"
             }
         }
     }
 
-    pub resource Collection: DuckeeArtCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
+    pub resource Collection: DuckeeArtNFTCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         // dictionary of NFT conforming tokens
         // NFT is a resource type with an `UInt64` ID field
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
@@ -85,7 +160,7 @@ pub contract DuckeeArt: NonFungibleToken {
         // deposit takes an NFT and adds it to the collections dictionary
         // and adds the ID to the id array
         pub fun deposit(token: @NonFungibleToken.NFT) {
-            let token <- token as! @DuckeeArt.NFT
+            let token <- token as! @DuckeeArtNFT.NFT
 
             let id: UInt64 = token.id
 
@@ -108,11 +183,11 @@ pub contract DuckeeArt: NonFungibleToken {
             return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
         }
 
-        pub fun borrowDuckeeArt(id: UInt64): &DuckeeArt.NFT? {
+        pub fun borrowDuckeeArtNFT(id: UInt64): &DuckeeArtNFT.NFT? {
             if self.ownedNFTs[id] != nil {
                 // Create an authorized reference to allow downcasting
                 let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
-                return ref as! &DuckeeArt.NFT
+                return ref as! &DuckeeArtNFT.NFT
             }
 
             return nil
@@ -120,12 +195,32 @@ pub contract DuckeeArt: NonFungibleToken {
 
         pub fun borrowViewResolver(id: UInt64): &AnyResource{MetadataViews.Resolver} {
             let nft = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
-            let duckeeArtNFT = nft as! &DuckeeArt.NFT
-            return duckeeArtNFT as &AnyResource{MetadataViews.Resolver}
+            let DuckeeArtNFTNFT = nft as! &DuckeeArtNFT.NFT
+            return DuckeeArtNFTNFT as &AnyResource{MetadataViews.Resolver}
         }
 
         destroy() {
             destroy self.ownedNFTs
+        }
+    }
+
+    pub resource Minter {
+        pub fun mintNFT(
+            recipient: &{NonFungibleToken.CollectionPublic},
+            id: UInt64,
+            description: String,
+            thumbnail: String,
+            parentTokenID: UInt64?,
+        ) {
+            // create a new NFT
+            var newNFT <- create NFT(
+                id: id,
+                description: description,
+                thumbnail: thumbnail,
+                parentTokenID: parentTokenID,
+            )
+            recipient.deposit(token: <-newNFT)
+            DuckeeArtNFT.totalSupply = DuckeeArtNFT.totalSupply + UInt64(1)
         }
     }
 
@@ -134,32 +229,24 @@ pub contract DuckeeArt: NonFungibleToken {
         return <- create Collection()
     }
 
-    pub fun mintNFT(recipient: &{NonFungibleToken.CollectionPublic}, type: String, url: String) {
-        // create a new NFT
-        var newNFT <- create NFT(
-            id: DuckeeArt.totalSupply,
-            type: type,
-            url: url,
-        )
-        recipient.deposit(token: <-newNFT)
-        DuckeeArt.totalSupply = DuckeeArt.totalSupply + UInt64(1)
-    }
-
     init() {
         self.totalSupply = 0
 
-        self.CollectionStoragePath = /storage/duckeeArtCollection
-        self.CollectionPublicPath = /public/duckeeArtCollection
-        self.MinterStoragePath = /storage/duckeeArtMinter
+        self.CollectionStoragePath = /storage/DuckeeArtNFTCollection
+        self.CollectionPublicPath = /public/DuckeeArtNFTCollection
+        self.MinterStoragePath = /storage/DuckeeArtNFTMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
         self.account.save(<-collection, to: self.CollectionStoragePath)
 
-        self.account.link<&DuckeeArt.Collection{NonFungibleToken.CollectionPublic, DuckeeArt.DuckeeArtCollectionPublic, MetadataViews.ResolverCollection}>(
+        self.account.link<&DuckeeArtNFT.Collection{NonFungibleToken.CollectionPublic, DuckeeArtNFT.DuckeeArtNFTCollectionPublic, MetadataViews.ResolverCollection}>(
             self.CollectionPublicPath,
             target: self.CollectionStoragePath
         )
+
+        let minter <- create Minter()
+        self.account.save(<-minter, to: self.MinterStoragePath)
 
         emit ContractInitialized()
     }
